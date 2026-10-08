@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>STREAMFLIX – Netflix Style Prototype</title>
+<style>
+/* ===== Design Tokens (Figma Variables سے ملتے جلتے) ===== */
+:root{
+  --bg:#141414; --bg-2:#1f1f1f; --text:#fff; --muted:#b3b3b3;
+  --red:#e50914; --red-dark:#b20710; --radius:6px;
+  --font:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none}
+
+/* ===== Navbar ===== */
+.nav{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:50;display:flex;align-items:center;gap:24px;padding:14px 4%;
+  background:linear-gradient(180deg,rgba(0,0,0,.85),transparent);transition:background .3s}
+.nav.solid{background:var(--bg)}
+.logo{color:var(--red);font-weight:900;font-size:26px;letter-spacing:2px}
+.links{display:flex;gap:18px;font-size:14px}
+.links a{color:var(--muted);text-decoration:none;transition:color .2s}
+.links a:hover,.links a.active{color:#fff}
+.spacer{flex:1}
+.search{display:flex;align-items:center;background:transparent;border:1px solid transparent;border-radius:4px;transition:.3s}
+.search.open{background:rgba(0,0,0,.7);border-color:#fff}
+.search input{width:0;padding:0;background:none;border:none;color:#fff;outline:none;transition:.3s;font-size:14px}
+.search.open input{width:200px;padding:6px 8px}
+.search button{background:none;color:#fff;font-size:18px;padding:6px 8px}
+.avatar{width:32px;height:32px;border-radius:4px;background:linear-gradient(135deg,#00b4db,#0083b0);display:grid;place-items:center;font-weight:700;font-size:14px}
+
+/* ===== Hero ===== */
+.hero{position:relative;height:88vh;min-height:480px;display:flex;align-items:center;padding:0 4%;
+  background:radial-gradient(circle at 75% 30%,#7a1020 0,transparent 55%),linear-gradient(120deg,#0b0b1a,#2a0a14 60%,#141414)}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:35%;background:linear-gradient(transparent,var(--bg))}
+.hero-body{position:relative;z-index:2;max-width:560px}
+.badge{color:var(--red);font-weight:900;letter-spacing:3px;font-size:13px;margin-bottom:10px}
+.hero h1{font-size:clamp(36px,6vw,68px);line-height:1.05;margin-bottom:14px}
+.hero p{color:#ddd;line-height:1.5;margin-bottom:22px;font-size:clamp(14px,1.6vw,18px)}
+.btn{padding:10px 26px;border-radius:4px;font-size:16px;font-weight:700;margin-right:10px;transition:.2s}
+.btn.play{background:#fff;color:#000}.btn.play:hover{background:#ddd}
+.btn.info{background:rgba(109,109,110,.7);color:#fff}.btn.info:hover{background:rgba(109,109,110,.45)}
+
+/* ===== Rows ===== */
+.rows{position:relative;z-index:3;margin-top:-90px;padding-bottom:60px}
+.row{margin-bottom:34px}
+.row h2{font-size:20px;margin:0 4% 10px}
+.track-wrap{position:relative}
+.track{display:flex;gap:8px;overflow-x:auto;scroll-behavior:smooth;padding:10px 4% 24px;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.arrow{position:absolute;top:10px;bottom:24px;width:4%;z-index:5;background:rgba(0,0,0,.5);color:#fff;font-size:28px;opacity:0;transition:.2s}
+.track-wrap:hover .arrow{opacity:1}
+.arrow.l{left:0}.arrow.r{right:0}
+
+.card{flex:0 0 auto;width:clamp(140px,17vw,240px);aspect-ratio:16/9;border-radius:var(--radius);position:relative;overflow:hidden;
+  transition:transform .25s,box-shadow .25s;cursor:pointer;display:flex;align-items:flex-end}
+.card:hover{transform:scale(1.18);z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.8)}
+.card .t{width:100%;padding:8px 10px;font-size:13px;font-weight:700;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+.card .em{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);font-size:40px;opacity:.9}
+.card .heart{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px}
+.card .heart.on{color:var(--red)}
+
+/* ===== Modal ===== */
+.modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.box{background:var(--bg-2);width:min(760px,100%);max-height:90vh;overflow:auto;border-radius:10px;animation:pop .25s}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.box .top{height:300px;display:grid;place-items:center;font-size:90px;position:relative}
+.box .close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:#181818;color:#fff;font-size:18px}
+.box .info{padding:22px 28px 28px}
+.box h3{font-size:28px;margin-bottom:8px}
+.meta{color:#46d369;font-weight:700;font-size:14px;margin-bottom:12px}
+.meta span{color:var(--muted);font-weight:400;margin-left:10px}
+.box p{color:#ddd;line-height:1.6;margin-bottom:18px}
+
+.empty{text-align:center;color:var(--muted);padding:60px 4%}
+footer{color:var(--muted);text-align:center;font-size:13px;padding:30px 4% 50px}
+@media(max-width:700px){.links{display:none}.hero{height:75vh}.card:hover{transform:scale(1.05)}}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="logo">STREAMFLIX</div>
+  <nav class="links">
+    <a href="#top" class="active">Home</a>
+    <a href="#trending">TV Shows</a>
+    <a href="#movies">Movies</a>
+    <a href="#mylist">My List</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="search" id="search">
+    <button id="sBtn" aria-label="Search">🔍</button>
+    <input id="sInput" placeholder="Titles, genres…">
+  </div>
+  <div class="avatar">M</div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-body">
+    <div class="badge">S STREAMFLIX ORIGINAL</div>
+    <h1 id="heroTitle">Midnight Code</h1>
+    <p id="heroDesc">A young programmer discovers a hidden algorithm that predicts the future. Now everyone wants it — and time is running out.</p>
+    <button class="btn play" id="heroPlay">▶ Play</button>
+    <button class="btn info" id="heroInfo">ⓘ More Info</button>
+  </div>
+</section>
+
+<main class="rows" id="rows"></main>
+<footer>Prototype for learning purposes only · HTML + CSS + JavaScript · Not affiliated with Netflix</footer>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="top" id="mTop"><button class="close" id="mClose">✕</button><span id="mEm"></span></div>
+    <div class="info">
+      <h3 id="mTitle"></h3>
+      <div class="meta" id="mMeta"></div>
+      <p id="mDesc"></p>
+      <button class="btn play" id="mPlay">▶ Play</button>
+      <button class="btn info" id="mList">＋ My List</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Data ===== */
+const G = [
+  ['#ff512f','#dd2476'],['#1d976c','#93f9b9'],['#396afc','#2948ff'],['#f7971e','#ffd200'],
+  ['#8e2de2','#4a00e0'],['#00b4db','#0083b0'],['#cb2d3e','#ef473a'],['#134e5e','#71b280']
+];
+const M = [
+  {id:1,t:'Midnight Code',e:'💻',g:'Sci-Fi',y:2025,r:'16+',cat:'trending',d:'A young programmer discovers a hidden algorithm that predicts the future.'},
+  {id:2,t:'Desert Storm',e:'🏜️',g:'Action',y:2024,r:'13+',cat:'trending',d:'A lone survivor crosses a deadly desert to deliver a secret message.'},
+  {id:3,t:'Neon City',e:'🌆',g:'Thriller',y:2025,r:'16+',cat:'trending',d:'A detective hunts a hacker who controls a city’s lights.'},
+  {id:4,t:'Laugh Factory',e:'😂',g:'Comedy',y:2023,r:'7+',cat:'trending',d:'Five friends open a failing comedy club and accidentally go viral.'},
+  {id:5,t:'Deep Blue',e:'🌊',g:'Documentary',y:2024,r:'All',cat:'trending',d:'A journey into the least explored depths of the ocean.'},
+  {id:6,t:'Space Farm',e:'🚀',g:'Sci-Fi',y:2025,r:'13+',cat:'trending',d:'Farmers on Mars face their first harvest — and first alien visitor.'},
+  {id:7,t:'The Last Chess',e:'♟️',g:'Drama',y:2022,r:'13+',cat:'movies',d:'An old champion teaches a street kid the game that changes both lives.'},
+  {id:8,t:'Cyber Heist',e:'🕶️',g:'Action',y:2025,r:'16+',cat:'movies',d:'A crew breaks into the world’s most secure digital vault.'},
+  {id:9,t:'Monsoon Love',e:'🌧️',g:'Romance',y:2023,r:'13+',cat:'movies',d:'Two strangers share one umbrella and one unforgettable summer.'},
+  {id:10,t:'Dragon Peak',e:'🐉',g:'Fantasy',y:2024,r:'13+',cat:'movies',d:'A shepherd girl befriends the last dragon of the mountains.'},
+  {id:11,t:'Robo School',e:'🤖',g:'Kids',y:2025,r:'All',cat:'movies',d:'A robot enrolls in grade 7 to learn what friendship means.'},
+  {id:12,t:'Ghost Library',e:'👻',g:'Horror',y:2023,r:'16+',cat:'movies',d:'Books whisper secrets after midnight in an old city library.'},
+  {id:13,t:'Cricket Dreams',e:'🏏',g:'Sports',y:2024,r:'All',cat:'top',d:'A boy from a small town dreams of playing for the national team.'},
+  {id:14,t:'Code Wars',e:'⚔️',g:'Action',y:2025,r:'13+',cat:'top',d:'Two rival dev teams battle in a high-stakes hackathon.'},
+  {id:15,t:'Mountain Echo',e:'🏔️',g:'Adventure',y:2022,r:'All',cat:'top',d:'Trekkers follow an echo that leads to a lost valley.'},
+  {id:16,t:'Chef Rush',e:'🍳',g:'Reality',y:2024,r:'All',cat:'top',d:'Home cooks compete in a kitchen where every second counts.'}
+];
+const ROWS = [
+  {id:'trending',title:'🔥 Trending Now',cat:'trending'},
+  {id:'movies',title:'🎬 Popular Movies',cat:'movies'},
+  {id:'top',title:'🏆 Top Picks For You',cat:'top'}
+];
+let list = new Set([1]);       // My List (in-memory)
+let query = '';
+let current = null;
+
+const $ = s => document.querySelector(s);
+const grad = id => { const c=G[id%G.length]; return `linear-gradient(135deg,${c[0]},${c[1]})`; };
+
+/* ===== Render ===== */
+function cardHTML(m){
+  return `<div class="card" data-id="${m.id}" style="background:${grad(m.id)}">
+    <span class="em">${m.e}</span>
+    <button class="heart ${list.has(m.id)?'on':''}" data-heart="${m.id}" aria-label="Add to list">♥</button>
+    <div class="t">${m.t}</div></div>`;
+}
+function rowHTML(id,title,items){
+  return `<section class="row" id="${id}"><h2>${title}</h2>
+    <div class="track-wrap">
+      <button class="arrow l" data-dir="-1">‹</button>
+      <div class="track">${items.map(cardHTML).join('')}</div>
+      <button class="arrow r" data-dir="1">›</button>
+    </div></section>`;
+}
+function render(){
+  const q = query.trim().toLowerCase();
+  let html = '';
+  if(q){
+    const res = M.filter(m => (m.t+m.g).toLowerCase().includes(q));
+    html = res.length ? rowHTML('results',`Results for “${query}”`,res)
+                      : `<div class="empty">No results for “${query}”. Try another title.</div>`;
+  } else {
+    ROWS.forEach(r => html += rowHTML(r.id,r.title,M.filter(m=>m.cat===r.cat)));
+    const mine = M.filter(m=>list.has(m.id));
+    html += mine.length ? rowHTML('mylist','⭐ My List',mine)
+      : `<section class="row" id="mylist"><h2>⭐ My List</h2><div class="empty">Tap ♥ on any title to add it here.</div></section>`;
+  }
+  $('#rows').innerHTML = html;
+}
+
+/* ===== Events ===== */
+$('#rows').addEventListener('click', e=>{
+  const heart = e.target.closest('[data-heart]');
+  if(heart){ toggle(+heart.dataset.heart); return; }
+  const arrow = e.target.closest('.arrow');
+  if(arrow){ const t=arrow.parentElement.querySelector('.track'); t.scrollBy({left:arrow.dataset.dir*t.clientWidth*.8}); return; }
+  const card = e.target.closest('.card');
+  if(card) openModal(+card.dataset.id);
+});
+function toggle(id){
+  list.has(id) ? list.delete(id) : list.add(id);
+  render(); syncModal();
+}
+function openModal(id){
+  current = M.find(m=>m.id===id);
+  $('#mTop').style.background = grad(id);
+  $('#mEm').textContent = current.e;
+  $('#mTitle').textContent = current.t;
+  $('#mMeta').innerHTML = `98% Match <span>${current.y} · ${current.r} · ${current.g}</span>`;
+  $('#mDesc').textContent = current.d;
+  syncModal();
+  $('#modal').classList.add('show');
+}
+function syncModal(){
+  if(current) $('#mList').textContent = list.has(current.id) ? '✓ In My List' : '＋ My List';
+}
+const closeModal = ()=> $('#modal').classList.remove('show');
+$('#mClose').onclick = closeModal;
+$('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+$('#mList').onclick = ()=> toggle(current.id);
+$('#mPlay').onclick = ()=> alert('▶ Playing “'+current.t+'” (demo)');
+$('#heroPlay').onclick = ()=> alert('▶ Playing “Midnight Code” (demo)');
+$('#heroInfo').onclick = ()=> openModal(1);
+
+/* Search */
+$('#sBtn').onclick = ()=>{
+  const s=$('#search'); s.classList.toggle('open');
+  if(s.classList.contains('open')) $('#sInput').focus();
+};
+$('#sInput').addEventListener('input', e=>{ query=e.target.value; render(); });
+
+/* Navbar scroll effect */
+addEventListener('scroll', ()=> $('#nav').classList.toggle('solid', scrollY>40));
+
+render();
+</script>
+</body>
+</html>
