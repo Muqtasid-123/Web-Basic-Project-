@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Scientific Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155',
+                            accent: '#3b82f6',
+                            accentHover: '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Fira Code -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .calc-display {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbar for history */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-blue-500 selection:text-white">
+
+    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-calculator text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight">SciCalc Pro</h1>
+                <p class="text-xs text-slate-400">Engineering & Scientific Suite</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button id="soundToggle" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-sm flex items-center space-x-2" title="Toggle Sound">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                <span class="hidden sm:inline text-xs">Sound</span>
+            </button>
+            <button onclick="toggleHistory()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-sm flex items-center space-x-2" title="Calculation History">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="hidden sm:inline text-xs">History</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
+
+        <!-- Calculator Card Container -->
+        <div class="w-full max-w-xl bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-5 sm:p-7 flex flex-col transition-all duration-300">
+            
+            <div class="bg-slate-950/90 border border-slate-800/80 rounded-2xl p-4 mb-5 flex flex-col justify-end min-h-[120px] shadow-inner relative overflow-hidden">
+                <div id="angleModeBadge" class="absolute top-3 left-4 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 tracking-wider">DEG</div>
+                <div id="memoryBadge" class="absolute top-3 right-4 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 tracking-wider hidden">M</div>
+                
+                <div id="historyExpression" class="text-slate-400 text-sm sm:text-base calc-display text-right overflow-x-auto whitespace-nowrap mb-1 py-1"></div>
+                <div id="mainDisplay" class="text-white text-3xl sm:text-4xl font-semibold calc-display text-right overflow-x-auto whitespace-nowrap">0</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2 mb-4 text-xs font-medium">
+                <button onclick="setAngleMode('DEG')" id="btnDeg" class="col-span-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm">DEG</button>
+                <button onclick="setAngleMode('RAD')" id="btnRad" class="col-span-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">RAD</button>
+                <button onclick="memoryOp('MC')" class="py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">MC</button>
+                <button onclick="memoryOp('MR')" class="py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">MR</button>
+                <button onclick="memoryOp('Mplus')" class="py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">M+</button>
+                <button onclick="memoryOp('Mminus')" class="py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">M-</button>
+                <button onclick="memoryOp('MS')" class="py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition">MS</button>
+            </div>
+
+            <div class="grid grid-cols-5 gap-2.5">
+                <!-- Row 1: Advanced Scientific -->
+                <button onclick="appendFunction('sin')" class="sci-btn">sin</button>
+                <button onclick="appendFunction('cos')" class="sci-btn">cos</button>
+                <button onclick="appendFunction('tan')" class="sci-btn">tan</button>
+                <button onclick="appendConstant('Math.PI', 'π')" class="sci-btn">π</button>
+                <button onclick="appendConstant('Math.E', 'e')" class="sci-btn">e</button>
+
+                <!-- Row 2: Inverses & Powers -->
+                <button onclick="appendFunction('asin')" class="sci-btn">sin⁻¹</button>
+                <button onclick="appendFunction('acos')" class="sci-btn">cos⁻¹</button>
+                <button onclick="appendFunction('atan')" class="sci-btn">tan⁻¹</button>
+                <button onclick="appendOperator('**')" class="sci-btn">xʸ</button>
+                <button onclick="appendFunction('sqrt')" class="sci-btn">√x</button>
+
+                <!-- Row 3: Hyperbolic & Logarithms -->
+                <button onclick="appendFunction('sinh')" class="sci-btn">sinh</button>
+                <button onclick="appendFunction('cosh')" class="sci-btn">cosh</button>
+                <button onclick="appendFunction('tanh')" class="sci-btn">tanh</button>
+                <button onclick="appendFunction('log')" class="sci-btn">log₁₀</button>
+                <button onclick="appendFunction('ln')" class="sci-btn">ln</button>
+
+                <!-- Row 4: Brackets, Factorial, Clear -->
+                <button onclick="appendCharacter('(')" class="sci-btn">(</button>
+                <button onclick="appendCharacter(')')" class="sci-btn">)</button>
+                <button onclick="appendOperator('!')" class="sci-btn">n!</button>
+                <button onclick="clearAll()" class="p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-semibold transition text-sm">AC</button>
+                <button onclick="deleteLast()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold transition text-sm flex items-center justify-center"><i class="fa-solid fa-delete-left"></i></button>
+
+                <!-- Row 5: Numbers & Basic Ops -->
+                <button onclick="appendCharacter('7')" class="num-btn">7</button>
+                <button onclick="appendCharacter('8')" class="num-btn">8</button>
+                <button onclick="appendCharacter('9')" class="num-btn">9</button>
+                <button onclick="appendOperator('/')" class="op-btn">÷</button>
+                <button onclick="appendOperator('%')" class="sci-btn">%</button>
+
+                <!-- Row 6 -->
+                <button onclick="appendCharacter('4')" class="num-btn">4</button>
+                <button onclick="appendCharacter('5')" class="num-btn">5</button>
+                <button onclick="appendCharacter('6')" class="num-btn">6</button>
+                <button onclick="appendOperator('*')" class="op-btn">×</button>
+                <button onclick="appendFunction('abs')" class="sci-btn">|x|</button>
+
+                <!-- Row 7 -->
+                <button onclick="appendCharacter('1')" class="num-btn">1</button>
+                <button onclick="appendCharacter('2')" class="num-btn">2</button>
+                <button onclick="appendCharacter('3')" class="num-btn">3</button>
+                <button onclick="appendOperator('-')" class="op-btn">-</button>
+                <button onclick="calculateResult()" class="row-span-2 bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center text-xl">=</button>
+
+                <!-- Row 8 -->
+                <button onclick="appendCharacter('0')" class="col-span-2 num-btn">0</button>
+                <button onclick="appendCharacter('.')" class="num-btn">.</button>
+                <button onclick="appendOperator('+')" class="op-btn">+</button>
+            </div>
+        </div>
+
+        <div id="historyPanel" class="w-full lg:w-80 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-5 flex flex-col h-[520px] transition-all duration-300">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                <h3 class="font-semibold text-sm flex items-center space-x-2 text-slate-200">
+                    <i class="fa-solid fa-history text-blue-500"></i>
+                    <span>Calculation History</span>
+                </h3>
+                <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Clear</span>
+                </button>
+            </div>
+            <div id="historyList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <div class="text-center text-slate-500 text-xs py-16">No calculations yet</div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="messageModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-300" id="modalContentBox">
+            <div class="flex items-center space-x-3 mb-3">
+                <div id="modalIcon" class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h4 id="modalTitle" class="font-bold text-slate-100">Notice</h4>
+                    <p class="text-xs text-slate-400">SciCalc Pro Assistant</p>
+                </div>
+            </div>
+            <p id="modalMessage" class="text-slate-300 text-sm mb-5 leading-relaxed"></p>
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition shadow-lg shadow-blue-600/30">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Styling helper classes for buttons
+        const styleBtnClasses = () => {
+            document.querySelectorAll('.sci-btn').forEach(btn => {
+                btn.className = "p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-blue-400 font-medium transition text-xs sm:text-sm border border-slate-700/50 shadow-sm active:scale-95";
+            });
+            document.querySelectorAll('.num-btn').forEach(btn => {
+                btn.className = "p-3 rounded-xl bg-slate-800/40 hover:bg-slate-700/60 text-slate-200 font-medium transition text-sm sm:text-base border border-slate-800 shadow-sm active:scale-95";
+            });
+            document.querySelectorAll('.op-btn').forEach(btn => {
+                btn.className = "p-3 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 font-semibold transition text-sm sm:text-base active:scale-95";
+            });
+        };
+        styleBtnClasses();
+
+        // State variables
+        let currentExpression = '';
+        let displayValue = '0';
+        let memory = 0;
+        let angleMode = 'DEG'; // 'DEG' or 'RAD'
+        let soundEnabled = true;
+        let history = [];
+        let freshResult = false;
+
+        // Web Audio API sound feedback
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playClickSound() {
+            if (!soundEnabled) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundEnabled ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark";
+        }
+
+        function toggleHistory() {
+            const panel = document.getElementById('historyPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        function setAngleMode(mode) {
+            angleMode = mode;
+            playClickSound();
+            document.getElementById('btnDeg').className = mode === 'DEG' ? "col-span-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm" : "col-span-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition";
+            document.getElementById('btnRad').className = mode === 'RAD' ? "col-span-1 py-1.5 rounded-lg bg-blue-600 text-white transition shadow-sm" : "col-span-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition";
+            document.getElementById('angleModeBadge').innerText = mode;
+        }
+
+        function updateDisplay() {
+            document.getElementById('mainDisplay').innerText = displayValue;
+            document.getElementById('historyExpression').innerText = currentExpression;
+        }
+
+        function showModal(title, message, isError = false) {
+            const modal = document.getElementById('messageModal');
+            const box = document.getElementById('modalContentBox');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            
+            const iconDiv = document.getElementById('modalIcon');
+            if(isError) {
+                iconDiv.className = "w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-lg";
+                iconDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                iconDiv.className = "w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg";
+                iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('messageModal');
+            const box = document.getElementById('modalContentBox');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function appendCharacter(char) {
+            playClickSound();
+            if (freshResult) {
+                displayValue = '';
+                currentExpression = '';
+                freshResult = false;
+            }
+            if (displayValue === '0' && char !== '.') {
+                displayValue = char;
+            } else {
+                displayValue += char;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            playClickSound();
+            if (freshResult) {
+                freshResult = false;
+            }
+            displayValue += ' ' + op + ' ';
+            updateDisplay();
+        }
+
+        function appendConstant(constStr, constSymbol) {
+            playClickSound();
+            if (freshResult) {
+                displayValue = '';
+                freshResult = false;
+            }
+            if (displayValue === '0') {
+                displayValue = constSymbol;
+            } else {
+                displayValue += constSymbol;
+            }
+            updateDisplay();
+        }
+
+        function appendFunction(funcName) {
+            playClickSound();
+            if (freshResult) {
+                freshResult = false;
+            }
+            if (displayValue === '0') {
+                displayValue = funcName + '(';
+            } else {
+                displayValue += funcName + '(';
+            }
+            updateDisplay();
+        }
+
+        function clearAll() {
+            playClickSound();
+            displayValue = '0';
+            currentExpression = '';
+            freshResult = false;
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            playClickSound();
+            if (freshResult) {
+                clearAll();
+                return;
+            }
+            if (displayValue.length > 1) {
+                displayValue = displayValue.trim();
+                displayValue = displayValue.substring(0, displayValue.length - 1);
+            } else {
+                displayValue = '0';
+            }
+            updateDisplay();
+        }
+
+        // Mathematical conversion and evaluation helpers
+        function degToRad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let res = 1;
+            for (let i = 2; i <= n; i++) res *= i;
+            return res;
+        }
+
+        function calculateResult() {
+            playClickSound();
+            try {
+                currentExpression = displayValue;
+                
+                // Parse expression safely
+                let expr = displayValue;
+                
+                // Replace constants
+                expr = expr.replace(/π/g, 'Math.PI');
+                expr = expr.replace(/\be\b/g, 'Math.E');
+
+                // Replace factorial n! with factorial(n)
+                expr = expr.replace(/(\d+)!/g, 'factorial($1)');
+
+                // Replace scientific functions with JS Math counterparts
+                const toRad = angleMode === 'DEG' ? 'degToRad' : '';
+
+                if (angleMode === 'DEG') {
+                    expr = expr.replace(/\bsin\(([^)]+)\)/g, 'Math.sin(degToRad($1))');
+                    expr = expr.replace(/\bcos\(([^)]+)\)/g, 'Math.cos(degToRad($1))');
+                    expr = expr.replace(/\btan\(([^)]+)\)/g, 'Math.tan(degToRad($1))');
+                    
+                    expr = expr.replace(/\basin\(([^)]+)\)/g, '(180/Math.PI)*Math.asin($1)');
+                    expr = expr.replace(/\bacos\(([^)]+)\)/g, '(180/Math.PI)*Math.acos($1)');
+                    expr = expr.replace(/\batan\(([^)]+)\)/g, '(180/Math.PI)*Math.atan($1)');
+                } else {
+                    expr = expr.replace(/\bsin\(/g, 'Math.sin(');
+                    expr = expr.replace(/\bcos\(/g, 'Math.cos(');
+                    expr = expr.replace(/\btan\(/g, 'Math.tan(');
+                    expr = expr.replace(/\basin\(/g, 'Math.asin(');
+                    expr = expr.replace(/\bacos\(/g, 'Math.acos(');
+                    expr = expr.replace(/\batan\(/g, 'Math.atan(');
+                }
+
+                expr = expr.replace(/\bsinh\(/g, 'Math.sinh(');
+                expr = expr.replace(/\bcosh\(/g, 'Math.cosh(');
+                expr = expr.replace(/\btanh\(/g, 'Math.tanh(');
+                expr = expr.replace(/\bln\(/g, 'Math.log(');
+                expr = expr.replace(/\blog\(/g, 'Math.log10(');
+                expr = expr.replace(/\bsqrt\(/g, 'Math.sqrt(');
+                expr = expr.replace(/\babs\(/g, 'Math.abs(');
+
+                let result = eval(expr);
+
+                if (!isFinite(result)) {
+                    throw new Error("Mathematical Error (Division by zero or infinity)");
+                }
+
+                // Format result to precision
+                result = parseFloat(result.toFixed(10));
+                
+                addHistory(currentExpression, result);
+                displayValue = result.toString();
+                freshResult = true;
+                updateDisplay();
+
+            } catch (error) {
+                showModal("Calculation Error", error.message || "Invalid mathematical expression syntax.", true);
+            }
+        }
+
+        // Memory operations
+        function memoryOp(op) {
+            playClickSound();
+            let val = parseFloat(displayValue) || 0;
+            switch(op) {
+                case 'MC':
+                    memory = 0;
+                    break;
+                case 'MR':
+                    displayValue = memory.toString();
+                    freshResult = true;
+                    break;
+                case 'Mplus':
+                    memory += val;
+                    break;
+                case 'Mminus':
+                    memory -= val;
+                    break;
+                case 'MS':
+                    memory = val;
+                    break;
+            }
+            const badge = document.getElementById('memoryBadge');
+            if (memory !== 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+            updateDisplay();
+        }
+
+        function addHistory(expr, res) {
+            history.unshift({ expr, res });
+            if (history.length > 20) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (history.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-500 text-xs py-16">No calculations yet</div>';
+                return;
+            }
+            list.innerHTML = '';
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-800 transition cursor-pointer flex flex-col items-end";
+                div.innerHTML = `
+                    <div class="text-xs text-slate-400 calc-display">${item.expr}</div>
+                    <div class="text-sm font-semibold text-slate-200 calc-display">= ${item.res}</div>
+                `;
+                div.onclick = () => {
+                    displayValue = item.res.toString();
+                    currentExpression = item.expr;
+                    freshResult = true;
+                    updateDisplay();
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function clearHistory() {
+            playClickSound();
+            history = [];
+            renderHistory();
+        }
+
+        // Keyboard support listener
+        window.addEventListener('keydown', (e) => {
+            if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+                appendCharacter(e.key);
+            } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '%' || e.key === '(' || e.key === ')') {
+                appendOperator(e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                deleteLast();
+            } else if (e.key === 'Escape') {
+                clearAll();
+            }
+        });
+    </script>
+</body>
+</html>
